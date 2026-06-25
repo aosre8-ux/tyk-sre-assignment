@@ -8,6 +8,63 @@ Location: https://github.com/TykTechnologies/tyk-sre-assignment/tree/main/golang
 
 A Kubernetes monitoring and health check application built in Go that provides HTTP endpoints for cluster health monitoring, deployment status reporting, and application readiness checks.
 
+## Completed User Stories
+
+### SRE Stories
+
+✅ As an SRE I want to know whether all the deployments in the k8s cluster have as many healthy pods as requested by the respective Deployment spec
+
+Implemented via:
+
+- `/deployments/health`
+- Queries deployments across all namespaces
+- Compares desired replicas against ready replicas
+- Supports optional `?pretty=true` formatting
+
+✅ As an SRE I want to always know whether this tool can successfully communicate with the configured k8s API server
+
+Implemented via:
+
+- `/readyz`
+- Validates connectivity to the Kubernetes API server
+- Returns Kubernetes version
+- Returns API latency metrics
+
+### Application Developer Stories
+
+✅ As an application developer I want to build this application into a container image when I push a commit to the main branch of its repository
+
+Implemented via:
+
+- GitHub Actions workflow
+- Docker Buildx build and push
+- Automatic image publication
+- Image tagging using:
+  - `latest`
+  - Git commit SHA
+
+## CI/CD
+
+The repository contains a GitHub Actions workflow located at:
+
+.github/workflows/docker.yml
+
+On every push to the `main` branch the workflow:
+
+1. Checks out the repository
+2. Authenticates to the configured container registry
+3. Builds the Docker image using Docker Buildx
+4. Publishes the image
+5. Tags images using:
+   - latest
+   - short git commit SHA
+
+Required GitHub Secrets:
+
+- REGISTRY
+- REGISTRY_USERNAME
+- REGISTRY_PASSWORD
+- REGISTRY_NAMESPACE
 ---
 
 ## Project Structure
@@ -218,7 +275,7 @@ go mod tidy && go build
 
 ### Unit Tests
 ```bash
-go test -v
+go test -v ./...
 ```
 
 ---
