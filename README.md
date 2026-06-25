@@ -47,7 +47,7 @@ Implemented via:
 
 The repository contains a GitHub Actions workflow located at:
 
-.github/workflows/docker.yml
+.github/workflows/ci.yml
 
 On every push to the `main` branch the workflow:
 
@@ -60,11 +60,12 @@ On every push to the `main` branch the workflow:
    - short git commit SHA
 
 Required GitHub Secrets:
-
-- REGISTRY
 - REGISTRY_USERNAME
 - REGISTRY_PASSWORD
 - REGISTRY_NAMESPACE
+
+Required GitHub Variables:
+- REGISTRY
 ---
 
 ## Project Structure
