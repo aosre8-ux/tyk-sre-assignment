@@ -4,8 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/TykTechnologies/tyk-sre-assignment/handlers"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -15,7 +20,7 @@ func main() {
 
 	flag.Parse()
 
-	kConfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	kConfig, err := buildKubeConfig(*kubeconfig)
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +37,7 @@ func main() {
 
 	fmt.Printf("Connected to Kubernetes %s\n", version)
 
-	if err := startServer(*listenAddr); err != nil {
+	if err := startServer(*listenAddr, clientset); err != nil {
 		panic(err)
 	}
 }
@@ -52,8 +57,18 @@ func getKubernetesVersion(clientset kubernetes.Interface) (string, error) {
 // startServer launches an HTTP server with defined handlers and blocks until it's terminated or fails with an error.
 //
 // Expects a listenAddr to bind to.
-func startServer(listenAddr string) error {
+func startServer(listenAddr string, clientset kubernetes.Interface) error {
 	http.HandleFunc("/healthz", healthHandler)
+
+	http.HandleFunc(
+		"/deployments/health",
+		handlers.DeploymentHealthHandler(clientset),
+	)
+
+	http.HandleFunc(
+		"/readyz",
+		handlers.K8sHealthHandler(clientset),
+	)
 
 	fmt.Printf("Server listening on %s\n", listenAddr)
 
@@ -68,4 +83,26 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("failed writing to response")
 	}
+}
+func buildKubeConfig(kubeconfig string) (*rest.Config, error) {
+	// 1. Explicit kubeconfig always wins
+	if kubeconfig != "" {
+		return clientcmd.BuildConfigFromFlags("", kubeconfig)
+	}
+
+	// 2. In-cluster config for Kubernetes deployments
+	if cfg, err := rest.InClusterConfig(); err == nil {
+		return cfg, nil
+	}
+
+	// 3. Local fallback for development only
+	home, err := os.UserHomeDir()
+	if err == nil {
+		path := filepath.Join(home, ".kube", "config")
+		if _, statErr := os.Stat(path); statErr == nil {
+			return clientcmd.BuildConfigFromFlags("", path)
+		}
+	}
+
+	return nil, fmt.Errorf("could not build kubernetes config: no explicit kubeconfig, not running in cluster, and no local kubeconfig found")
 }
