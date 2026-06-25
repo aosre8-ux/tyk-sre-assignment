@@ -59,13 +59,6 @@ On every push to the `main` branch the workflow:
    - latest
    - short git commit SHA
 
-Required GitHub Secrets:
-- REGISTRY_USERNAME
-- REGISTRY_PASSWORD
-- REGISTRY_NAMESPACE
-
-Required GitHub Variables:
-- REGISTRY
 ---
 
 ## Project Structure
